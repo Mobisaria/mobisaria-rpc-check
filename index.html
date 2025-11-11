@@ -17,8 +17,8 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
+            align-items: flex-start;
+            padding: 40px 20px;
         }
 
         .container {
@@ -28,6 +28,7 @@
             padding: 40px;
             max-width: 600px;
             width: 100%;
+            margin: auto;
         }
 
         h1 {
@@ -211,6 +212,141 @@
             opacity: 0.6;
             cursor: not-allowed;
         }
+
+        .response-details {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .response-details h3 {
+            font-size: 18px;
+            color: #667eea;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            padding: 5px;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .response-details h3:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .collapse-arrow {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+            margin-left: auto;
+        }
+
+        .collapse-arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .details-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .details-content.expanded {
+            max-height: 2000px;
+            margin-top: 15px;
+        }
+
+        .detail-section {
+            margin-bottom: 15px;
+        }
+
+        .detail-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 13px;
+            color: #333;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .detail-value.success {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .detail-value.error {
+            color: #f5576c;
+            font-weight: 600;
+        }
+
+        .headers-grid {
+            display: grid;
+            gap: 8px;
+        }
+
+        .header-item {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .header-name {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .header-value {
+            color: #333;
+        }
+
+        .timing-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .timing-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .timing-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .timing-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -222,6 +358,51 @@
             <div class="status-indicator checking" id="statusIndicator">⏳</div>
             <div class="status-text checking" id="statusText">Checking...</div>
             <div class="status-details" id="statusDetails">Initializing connection...</div>
+        </div>
+
+        <div class="response-details" id="responseDetails">
+            <h3 onclick="toggleDetails()">
+                <span>📋 Response Details</span>
+                <span class="collapse-arrow collapsed" id="collapseArrow">▼</span>
+            </h3>
+            
+            <div class="details-content" id="detailsContent">
+                <div class="detail-section">
+                    <div class="detail-label">HTTP Status</div>
+                    <div class="detail-value" id="httpStatus">--</div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-label">Timing Information</div>
+                    <div class="timing-grid">
+                        <div class="timing-item">
+                            <div class="timing-value" id="totalTime">--</div>
+                            <div class="timing-label">Total Time (ms)</div>
+                        </div>
+                        <div class="timing-item">
+                            <div class="timing-value" id="requestTime">--</div>
+                            <div class="timing-label">Request Started</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-label">Response Headers</div>
+                    <div class="headers-grid" id="headersContainer">
+                        <div class="header-item">No headers available</div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-label">Response Body</div>
+                    <div class="detail-value" id="responseBody">--</div>
+                </div>
+
+                <div class="detail-section" id="errorSection" style="display: none;">
+                    <div class="detail-label">Error Details</div>
+                    <div class="detail-value error" id="errorDetails">--</div>
+                </div>
+            </div>
         </div>
 
         <div class="timer-section">
@@ -272,6 +453,14 @@
         const lastCheckedDisplay = document.getElementById('lastChecked');
         const manualCheckBtn = document.getElementById('manualCheckBtn');
 
+        function toggleDetails() {
+            const detailsContent = document.getElementById('detailsContent');
+            const collapseArrow = document.getElementById('collapseArrow');
+            
+            detailsContent.classList.toggle('expanded');
+            collapseArrow.classList.toggle('collapsed');
+        }
+
         function updateTimer() {
             secondsLeft--;
             if (secondsLeft < 0) {
@@ -287,6 +476,62 @@
             countdownId = setInterval(updateTimer, 1000);
         }
 
+        function displayResponseDetails(details) {
+            const httpStatus = document.getElementById('httpStatus');
+            const totalTime = document.getElementById('totalTime');
+            const requestTime = document.getElementById('requestTime');
+            const headersContainer = document.getElementById('headersContainer');
+            const responseBody = document.getElementById('responseBody');
+            const errorSection = document.getElementById('errorSection');
+            const errorDetails = document.getElementById('errorDetails');
+
+            console.log('Displaying response details:', details);
+
+            // HTTP Status
+            if (details.status) {
+                httpStatus.className = 'detail-value ' + (details.isSuccess ? 'success' : 'error');
+                httpStatus.textContent = `${details.status} ${details.statusText}`;
+            } else {
+                httpStatus.textContent = 'Checking...';
+            }
+
+            // Timing
+            totalTime.textContent = details.responseTime || '--';
+            requestTime.textContent = details.startTime ? new Date(details.startTime).toLocaleTimeString() : '--';
+
+            // Headers
+            if (details.headers && details.headers.length > 0) {
+                console.log('Found headers:', details.headers.length);
+                headersContainer.innerHTML = details.headers.map(header => 
+                    `<div class="header-item">
+                        <span class="header-name">${header.name}:</span> 
+                        <span class="header-value">${header.value}</span>
+                    </div>`
+                ).join('');
+            } else {
+                console.log('No headers available');
+                headersContainer.innerHTML = '<div class="header-item">No headers available (CORS restriction)</div>';
+            }
+
+            // Response Body
+            if (details.body) {
+                console.log('Response body length:', details.body.length);
+                responseBody.textContent = details.body;
+            } else {
+                console.log('No response body');
+                responseBody.textContent = 'Empty or unable to read (CORS restriction)';
+            }
+
+            // Error Details
+            if (details.error) {
+                console.log('Error detected:', details.error);
+                errorSection.style.display = 'block';
+                errorDetails.textContent = details.error;
+            } else {
+                errorSection.style.display = 'none';
+            }
+        }
+
         async function checkStatus() {
             const startTime = Date.now();
             
@@ -300,6 +545,17 @@
             statusText.textContent = 'Checking...';
             statusDetails.textContent = 'Contacting RPC endpoint...';
 
+            let responseDetails = {
+                startTime: startTime,
+                responseTime: 0,
+                status: null,
+                statusText: '',
+                headers: [],
+                body: '',
+                error: null,
+                isSuccess: false
+            };
+
             try {
                 // Try to fetch from the RPC endpoint
                 const response = await fetch(RPC_URL, {
@@ -311,9 +567,40 @@
                 const endTime = Date.now();
                 const responseTime = endTime - startTime;
 
+                // Capture response details
+                responseDetails.responseTime = responseTime;
+                responseDetails.status = response.status;
+                responseDetails.statusText = response.statusText;
+
+                // Try to get headers
+                const headers = [];
+                try {
+                    response.headers.forEach((value, name) => {
+                        headers.push({ name, value });
+                    });
+                    responseDetails.headers = headers;
+                } catch (e) {
+                    console.log('Could not read headers:', e);
+                }
+
+                // Try to read response body
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const json = await response.json();
+                        responseDetails.body = JSON.stringify(json, null, 2);
+                    } else {
+                        const text = await response.text();
+                        responseDetails.body = text || '(Empty response)';
+                    }
+                } catch (e) {
+                    responseDetails.body = `Unable to read body: ${e.message}`;
+                }
+
                 if (response.ok || response.status === 405) { // 405 is Method Not Allowed, but means server is up
                     // Success
                     successCount++;
+                    responseDetails.isSuccess = true;
                     statusIndicator.className = 'status-indicator online';
                     statusIndicator.textContent = '✓';
                     statusText.className = 'status-text online';
@@ -330,10 +617,16 @@
                     statusDetails.textContent = `Status: ${response.status} ${response.statusText}`;
                     responseTimeDisplay.textContent = responseTime;
                 }
+
+                // Display all response details
+                displayResponseDetails(responseDetails);
             } catch (error) {
                 // Network error or CORS issue
                 const endTime = Date.now();
                 const responseTime = endTime - startTime;
+                
+                responseDetails.responseTime = responseTime;
+                responseDetails.error = `${error.name}: ${error.message}\n\nStack: ${error.stack}`;
                 
                 failCount++;
                 statusIndicator.className = 'status-indicator offline';
@@ -342,6 +635,9 @@
                 statusText.textContent = 'Offline';
                 statusDetails.textContent = `Error: ${error.message}`;
                 responseTimeDisplay.textContent = responseTime;
+
+                // Display error details
+                displayResponseDetails(responseDetails);
             }
 
             // Update stats
