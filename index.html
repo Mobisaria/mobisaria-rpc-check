@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPC Status Monitor - rpc.msharia.io</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .rpc-url {
+            text-align: center;
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.online {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.offline {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+        }
+
+        .status-indicator.checking {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            box-shadow: 0 10px 30px rgba(252, 182, 159, 0.4);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status-text {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .status-text.online {
+            color: #667eea;
+        }
+
+        .status-text.offline {
+            color: #f5576c;
+        }
+
+        .status-text.checking {
+            color: #fcb69f;
+        }
+
+        .status-details {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .timer-section {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .timer-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .timer {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .response-time {
+            color: #667eea;
+        }
+
+        .last-checked {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .manual-check-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .manual-check-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .manual-check-btn:active {
+            transform: translateY(0);
+        }
+
+        .manual-check-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 RPC Status Monitor</h1>
+        <div class="rpc-url">rpc.msharia.io</div>
+
+        <div class="status-card">
+            <div class="status-indicator checking" id="statusIndicator">⏳</div>
+            <div class="status-text checking" id="statusText">Checking...</div>
+            <div class="status-details" id="statusDetails">Initializing connection...</div>
+        </div>
+
+        <div class="timer-section">
+            <div class="timer-label">Next check in</div>
+            <div class="timer" id="timer">5</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value response-time" id="responseTime">--</div>
+                <div class="stat-label">Response (ms)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="successCount">0</div>
+                <div class="stat-label">Success</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="failCount">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="manual-check-btn" id="manualCheckBtn" onclick="checkStatus()">Check Now</button>
+        </div>
+
+        <div class="last-checked" id="lastChecked">Never checked</div>
+    </div>
+
+    <script>
+        const RPC_URL = 'https://rpc.msharia.io';
+        const CHECK_INTERVAL = 5000; // 5 seconds
+        
+        let successCount = 0;
+        let failCount = 0;
+        let timeoutId;
+        let countdownId;
+        let secondsLeft = 5;
+
+        // DOM elements
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const statusDetails = document.getElementById('statusDetails');
+        const timerDisplay = document.getElementById('timer');
+        const responseTimeDisplay = document.getElementById('responseTime');
+        const successCountDisplay = document.getElementById('successCount');
+        const failCountDisplay = document.getElementById('failCount');
+        const lastCheckedDisplay = document.getElementById('lastChecked');
+        const manualCheckBtn = document.getElementById('manualCheckBtn');
+
+        function updateTimer() {
+            secondsLeft--;
+            if (secondsLeft < 0) {
+                secondsLeft = 5;
+            }
+            timerDisplay.textContent = secondsLeft;
+        }
+
+        function startCountdown() {
+            clearInterval(countdownId);
+            secondsLeft = 5;
+            timerDisplay.textContent = secondsLeft;
+            countdownId = setInterval(updateTimer, 1000);
+        }
+
+        async function checkStatus() {
+            const startTime = Date.now();
+            
+            // Disable manual check button
+            manualCheckBtn.disabled = true;
+            
+            // Update UI to checking state
+            statusIndicator.className = 'status-indicator checking';
+            statusIndicator.textContent = '⏳';
+            statusText.className = 'status-text checking';
+            statusText.textContent = 'Checking...';
+            statusDetails.textContent = 'Contacting RPC endpoint...';
+
+            try {
+                // Try to fetch from the RPC endpoint
+                const response = await fetch(RPC_URL, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+
+                if (response.ok || response.status === 405) { // 405 is Method Not Allowed, but means server is up
+                    // Success
+                    successCount++;
+                    statusIndicator.className = 'status-indicator online';
+                    statusIndicator.textContent = '✓';
+                    statusText.className = 'status-text online';
+                    statusText.textContent = 'Online';
+                    statusDetails.textContent = `Status: ${response.status} ${response.statusText}`;
+                    responseTimeDisplay.textContent = responseTime;
+                } else {
+                    // Server responded but with an error
+                    failCount++;
+                    statusIndicator.className = 'status-indicator offline';
+                    statusIndicator.textContent = '✗';
+                    statusText.className = 'status-text offline';
+                    statusText.textContent = 'Issues Detected';
+                    statusDetails.textContent = `Status: ${response.status} ${response.statusText}`;
+                    responseTimeDisplay.textContent = responseTime;
+                }
+            } catch (error) {
+                // Network error or CORS issue
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                failCount++;
+                statusIndicator.className = 'status-indicator offline';
+                statusIndicator.textContent = '✗';
+                statusText.className = 'status-text offline';
+                statusText.textContent = 'Offline';
+                statusDetails.textContent = `Error: ${error.message}`;
+                responseTimeDisplay.textContent = responseTime;
+            }
+
+            // Update stats
+            successCountDisplay.textContent = successCount;
+            failCountDisplay.textContent = failCount;
+
+            // Update last checked time
+            const now = new Date();
+            lastCheckedDisplay.textContent = `Last checked: ${now.toLocaleTimeString()}`;
+
+            // Re-enable manual check button
+            manualCheckBtn.disabled = false;
+
+            // Schedule next check
+            clearTimeout(timeoutId);
+            startCountdown();
+            timeoutId = setTimeout(checkStatus, CHECK_INTERVAL);
+        }
+
+        // Start checking immediately on page load
+        checkStatus();
+    </script>
+</body>
+</html>
+
